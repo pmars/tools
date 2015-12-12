@@ -1,0 +1,7 @@
+MANIFEST.in
+setup.py
+sumi.py
+sumi.egg-info/PKG-INFO
+sumi.egg-info/SOURCES.txt
+sumi.egg-info/dependency_links.txt
+sumi.egg-info/top_level.txt

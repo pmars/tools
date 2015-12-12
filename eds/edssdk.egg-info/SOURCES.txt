@@ -1,0 +1,8 @@
+setup.py
+edssdk/__init__.py
+edssdk/help.py
+edssdk.egg-info/PKG-INFO
+edssdk.egg-info/SOURCES.txt
+edssdk.egg-info/dependency_links.txt
+edssdk.egg-info/entry_points.txt
+edssdk.egg-info/top_level.txt

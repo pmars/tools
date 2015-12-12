@@ -1,0 +1,3 @@
+[console_scripts]
+edssdk = edssdk.help:main
+
