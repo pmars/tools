@@ -1,11 +1,11 @@
 Metadata-Version: 1.0
-Name: edssdk
-Version: 0.1.2
-Summary: eds sdk
+Name: fcon
+Version: 0.3
+Summary: find content
 Home-page: http://xiaoh.me
 Author: xiaoh
 Author-email: huoxingming@gmail.com
 License: MIT Licence
-Description: eds sdk for python
-Keywords: pip,datacanvas,eds,xiaoh
+Description: find content from your setting path.
+Keywords: find,fcon,xiaoh
 Platform: any

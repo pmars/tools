@@ -12,11 +12,11 @@
 from setuptools import setup, find_packages
 
 setup(
-    name = "edssdk",
-    version = "0.1.2",
-    keywords = ("pip", "datacanvas", "eds", "xiaoh"),
-    description = "eds sdk",
-    long_description = "eds sdk for python",
+    name = "fcon",
+    version = "0.3",
+    keywords = ("find", "fcon", "xiaoh"),
+    description = "find content",
+    long_description = "find content from your setting path.",
     license = "MIT Licence",
 
     url = "http://xiaoh.me",
@@ -31,7 +31,7 @@ setup(
     scripts = [],
     entry_points = {
         'console_scripts': [
-            'edssdk = edssdk.help:main'
+            'fcon = fcon.fcon:fcon'
         ]
     }
 )

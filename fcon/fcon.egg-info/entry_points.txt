@@ -1,0 +1,3 @@
+[console_scripts]
+fcon = fcon.fcon:fcon
+

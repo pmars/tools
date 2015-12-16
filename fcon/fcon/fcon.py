@@ -2,8 +2,8 @@
 #-*- coding:utf-8 -*-
 
 #############################################
-# File Name: findc.py
-# Author: xingming
+# File Name: fcon.py
+# Author: xiaoh
 # Mail: p.mars@163.com
 # Created Time:  2015-11-20 02:51:31 PM
 #############################################
@@ -49,7 +49,7 @@ parser.add_option(
 
 (options, args) = parser.parse_args()
 
-def findc():
+def fcon():
     dirPath = options.dirPath
     filename = options.filename
     regex = options.regex
@@ -109,5 +109,5 @@ def findFiles(dirPath, r):
 
 
 if __name__ == "__main__":
-    findc()
+    fcon()
 
