@@ -1,6 +1,4 @@
-find content from dirPath
+the sdk of eds service
 
-this script can search all files in dirPath, then find all lines which contain
-content(regex) value.
+you can install this sdk and using for call the apis of eds service
 
-using -h(--help) for help.
