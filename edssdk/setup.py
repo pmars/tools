@@ -13,7 +13,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = "edssdk",
-    version = "0.4.3",
+    version = "0.4.4",
     keywords = ("pip", "ehc", "datacanvas", "eds", "xiaoh"),
     description = "eds sdk",
     long_description = "eds sdk for python",

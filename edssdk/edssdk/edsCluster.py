@@ -42,7 +42,7 @@ class edsCluster:
         if token:
             self.token = token
         header = {'Content-Type':'application/json', 'X-AUTH-TOKEN':self.token}
-        return requests.get(self.startURL + edsId, headers=headers)
+        return requests.get(self.startURL + edsId, headers=header)
 
     def reboot(self, edsId, token=None):
         if token:
