@@ -1,0 +1,3 @@
+[console_scripts]
+edsmodule = edsmodule.edsmodule:edsModule
+

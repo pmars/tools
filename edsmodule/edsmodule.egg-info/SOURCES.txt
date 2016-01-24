@@ -1,0 +1,9 @@
+setup.py
+edsmodule/__init__.py
+edsmodule/edsmodule.py
+edsmodule.egg-info/PKG-INFO
+edsmodule.egg-info/SOURCES.txt
+edsmodule.egg-info/dependency_links.txt
+edsmodule.egg-info/entry_points.txt
+edsmodule.egg-info/requires.txt
+edsmodule.egg-info/top_level.txt
