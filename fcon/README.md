@@ -1,6 +1,16 @@
-find content from dirPath
 
-this script can search all files in dirPath, then find all lines which contain
-content(regex) value.
+### fcon
 
-using -h(--help) for help.
+### Using For
+
+searching content from files which match file\_reg pattern(regex) in search\_path directry.
+
+using --help for help.
+
+### Author
+
+xiaoh
+
+### Home Page
+
+<http://www.xiaoh.me>
