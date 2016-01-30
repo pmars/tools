@@ -54,7 +54,7 @@ def main():
             while en.startswith(' '):
                 en = en[1:]
             en = en.replace(' ', '-')
-            line = '[' + tr.group(1) + '](#' + en.lower() + tr.group(2) + ')\n'
+            line = '[' + tr.group(1) + '](#' + en.lower() + tr.group(2).lower() + ')\n'
             # 清除上面的小标题（保证title里面都是从大到小的顺序）
             while len(title) > 0 and title[len(title)-1] >= length:
                 title.pop()
