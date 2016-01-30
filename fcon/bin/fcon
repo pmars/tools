@@ -10,22 +10,26 @@
 
 import sys, os, re, string
 import click
+try:
+    import fcon
+except:
+    sys.path.append(os.path.join(os.path.dirname(__file__), "../"))
+    import fcon
 
-__version__ = "0.0.1"
-
-def version(ctx, param, value):
+def output_version(ctx, param, value):
     if not value or ctx.resilient_parsing:
         return
-    click.echo("Version: %s" % __version__)
+    click.echo("Version: %s" % fcon.__version__)
     ctx.exit()
 
 @click.command()
-@click.option('-v', '--version', is_flag=True, is_eager=True, callback=version, expose_value=False)
+@click.option('-v', '--version', is_flag=True, is_eager=True, callback=output_version, expose_value=False)
 @click.option('-p', '--search_path', default=os.getcwd(), help='Path for searching default:[%s]' % os.getcwd())
 @click.option('-f', '--file_reg', default='', help='Regex string for searching files pattern default:[\'\']')
 @click.option('-r', '--con_reg', default='', help='Regex string for searching content pattern default:[\'\']')
 @click.option('--output/--no-output', default=False, help='Output logs default:[False]')
 def cli(search_path, file_reg, con_reg, output):
+    print search_path, file_reg, con_reg, output
     if not os.path.isdir(search_path):
         click.echo('[ERROR] Path for searching ERROR')
         return
@@ -36,7 +40,7 @@ def cli(search_path, file_reg, con_reg, output):
         return
 
     try:
-        cr = re.compile('.*%s.*' % con_reg)
+        cr = re.compile('(.*)(%s)(.*)' % con_reg.replace('(','').replace(')',''))
     except:
         click.echo('[ERROR] Regex string for searching content ERROR')
         return
@@ -48,11 +52,17 @@ def cli(search_path, file_reg, con_reg, output):
             click.echo('SEARCHING FILE: "%s"' % fi)
         if is_text_file(fi):
             with open(fi) as f:
+                out_flag = False
                 lines = f.readlines()
                 for index in xrange(len(lines)):
                     line = lines[index]
-                    if cr.match(line):
-                        click.echo("%3s, %s" % (str(index+1), line[0:-1]))
+                    m = cr.match(line[0:-1])
+                    if m:
+                        if not out_flag:
+                            click.echo('\033[0mRESULT FROM FILE: \033[1;33;40m%s' % fi)
+                            out_flag = True
+                        click.echo("\033[1;31;40m%3s\033[0m, %s\033[0;32;40m%s\033[0m%s" 
+                                % (str(index+1), m.group(1), m.group(2), m.group(3)))
 
     click.echo('SEARCHING DONE.')
 

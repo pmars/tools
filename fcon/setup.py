@@ -8,12 +8,12 @@
 # Created Time:  2015-12-11 01:25:34 AM
 #############################################
 
-import fcon.fcon
 from setuptools import setup, find_packages
+import fcon
 
 setup(
     name = "fcon",
-    version = fcon.fcon.__version__,
+    version = fcon.__version__,
     keywords = ("find", "fcon", "xiaoh"),
     description = "find content",
     long_description = "print files which contain the content you want to search.",
@@ -23,16 +23,18 @@ setup(
     author = "xiaoh",
     author_email = "xiaoh@about.me",
 
-    packages = find_packages(),
+    packages = ['fcon'],
+    package_data = {
+    },
     include_package_data = True,
     platforms = "any",
     install_requires = ["click"],
 
-    scripts = [],
-    entry_points = {
-        'console_scripts': [
-            'fcon = fcon.fcon'
-        ]
-    }
+    scripts = ['bin/fcon']
+#    entry_points = {
+#        'console_scripts': [
+#            'fcon = bin/fcon'
+#        ]
+#    }
 )
 
