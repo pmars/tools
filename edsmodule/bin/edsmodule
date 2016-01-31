@@ -1,0 +1,359 @@
+#!/home/xingming/pyvirt/bin/python
+#-*- coding:utf-8 -*-
+
+#############################################
+# File Name: edsmodule.py
+# Author: xiaoh
+# Mail: p.mars@163.com 
+# Created Time:  2016-01-14 17:30:05
+#############################################
+
+import click, requests
+import sys, os, tarfile, re, json, uuid
+from plumbum.cmd import grep, sudo, docker, wc, rm
+try:
+    import edsmodule
+except:
+    sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
+    import edsmodule
+
+def output_version(ctx, param, value):
+    if not value or ctx.resilient_parsing:
+        return
+    click.echo("Version: %s" % edsmodule.__version__)
+    ctx.exit()
+
+@click.group()
+@click.option('-v', '--version', is_flag=True, is_eager=True, callback=output_version, expose_value=False)
+def cli():
+    pass
+
+pathReg = re.compile('^(.*?)[\\/]?([^\\/]+?)(\.tar)?$')
+
+@click.command()
+@click.option('-u', '--username', envvar='DATACANVAS_USERNAME', default='admin', 
+        help='Datacanvas username Default:["admin"]')
+@click.option('-p', '--password', envvar='DATACANVAS_PASSWORD', required=True, 
+        help='Datacanvas user password')
+@click.option('-m', '--module', required=True, 
+        help='Module name you want to export')
+@click.option('-s', '--spec_server', envvar='DATACANVAS_SPEC_SERVER', required=True, help='Spec server')
+@click.option('-o', '--output', default=os.getcwd(), 
+        help='Output directory of modules Default:["%s"]' % os.getcwd())
+@click.option('--out', is_flag=True, default=False, help='Print logs out Default:[Flase]')
+def export_eds(username, password, module, spec_server, output, out):
+    _export_eds(username, password, module, spec_server, output, out)
+
+def _export_eds(username, password, module, spec_server, output, out):
+    if out:
+        click.echo('username:%s, password:%s, module:%s, spec_server:%s, output:%s, out:%s' 
+                % (username, password, module, spec_server, output, out))
+
+    if out:
+        click.echo('check module \'%s\'exist or not from docker server' % module)
+    flag, full_module = check_module_docker(username, module)
+    if not flag:
+        click.echo('\033[1;31;40m[ERROR] Don\'t find module named \'%s\' from docker images list\033[0m' % full_module)
+        return
+
+    if out:
+        click.echo('get cookies from server \'%s\' with username:%s and password:%s'
+            % (spec_server, username, password))
+    cookies = get_cookies(spec_server, username, password)
+
+    if out:
+        click.echo('check module %s exist or not from server:%s' % (module, spec_server))
+    flag, module_id = check_module_server(spec_server, cookies, module)
+    if not flag:
+        click.echo('\033[1;31;40m[ERROR] Don\'t find module named \'%s\' from server\033[0m' % module)
+        return
+
+    if out:
+        click.echo('download module:%s from spec server:%s' % (module, spec_server))
+    down_url = 'http://%s/tf/module/download/%s' % (spec_server, module_id)
+    save_path = '%s/%s_code.tar' % (output, module)
+    flag = down_module_from_server(down_url, save_path, cookies)
+    if not flag:
+        click.echo('\033[1;31;40m[ERROR] Download module \'%s\' from server ERROR\033[0m' % module)
+        return
+
+    if out:
+        click.echo('save docker images:%s now.' % full_module)
+    save_path = '%s/%s.tar' % (output, module)
+    sudo[docker['save', '-o', save_path, full_module]]()
+    click.echo('EXPORT module:%s DONE.' % module)
+
+@click.command()
+@click.option('-u', '--username', envvar='DATACANVAS_USERNAME', default='admin', 
+        help='Datacanvas username Default:["admin"]')
+@click.option('-p', '--password', envvar='DATACANVAS_PASSWORD', required=True, 
+        help='Datacanvas user password')
+@click.option('-s', '--spec_server', envvar='DATACANVAS_SPEC_SERVER', required=True, help='Spec server')
+@click.option('-o', '--output', default=os.getcwd(), 
+        help='Output directory of modules Default:["%s"]' % os.getcwd())
+@click.option('--out', is_flag=True, default=False, help='Print logs out Default:[Flase]')
+@click.option('--export-type', default='section', type=click.Choice(['section', 'union']), 
+        help='Union(exist in docker or server) or section(both exist in docker and server) for export modules Default:[section]')
+def export_all(username, password, spec_server, output, out, export_type):
+    if out:
+        click.echo('username:%s, password:%s, spec_server:%s, output:%s, out:%s, export_type:%s' 
+                % (username, password, spec_server, output, out, export_type))
+
+    if out:
+        click.echo('get module list from docker server')
+    docker_modules = get_modules_docker(username)
+    print docker_modules
+
+    if out:
+        click.echo('get cookies from server:%s with username:%s and password:%s' 
+                % (spec_server, username, password))
+    cookies = get_cookies(spec_server, username, password)
+
+    if out:
+        click.echo('get module list from spec server:%s' % spec_server)
+    server_modules = get_modules_server(spec_server, cookies)
+    print server_modules
+
+    if out:
+        click.echo('get %s from two module list' % export_type)
+    if export_type == 'section':
+        modules = list(set(docker_modules) & set(server_modules))
+    else:
+        modules = list(set(a).union(set(b)))        # only section type for this version
+
+    if out:
+        click.echo('start export modules one by one')
+
+    for module in modules:
+        _export_eds(username, password, module, spec_server, output, out)
+
+@click.command()
+@click.option('-u', '--username', envvar='DATACANVAS_USERNAME', default='admin', 
+        help='Datacanvas username Default:["admin"]')
+@click.option('-p', '--password', envvar='DATACANVAS_PASSWORD', required=True, 
+        help='Datacanvas user password')
+@click.option('-m', '--module', required=True, 
+        help='Module name you want to export')
+@click.option('-s', '--spec_server', envvar='DATACANVAS_SPEC_SERVER', required=True, help='Spec server')
+@click.option('-i', '--image_file', type=unicode,
+        help='Module image tar file Default:["%s/$MODULE.tar"]' % os.getcwd())
+@click.option('-c', '--code_file', type=unicode,
+        help='Module image tar file Default:["%s/$MODULE_code.tar"]' % os.getcwd())
+@click.option('--import-type', default='all', type=click.Choice(['part', 'all']), 
+        help='All(both image and code file exist) or par(only import the tar exist) for import modules Default:[all]')
+@click.option('--out', is_flag=True, default=False, help='Print logs out Default:[Flase]')
+@click.option('--add_version', is_flag=True, default=False, help='Add module version Default:[Flase]')
+def import_eds(username, password, module, spec_server, image_file, code_file, import_type, add_version, out):
+        _import_eds(username, password, module, spec_server, image_file, code_file, import_type, add_version, out)
+
+def _import_eds(username, password, module, spec_server, image_file, code_file, import_type, add_version, out):
+    if not image_file:
+        image_file = "%s/%s.tar" % (os.getcwd(), module)
+    if not code_file:
+        code_file = "%s/%s_code.tar" % (os.getcwd(), module)
+    if out:
+        click.echo('username:%s, password:%s, module:%s, spec_server:%s, image_file:%s, code_file:%s, import_type:%s, add_version:%s, out:%s' % (username, password, module, spec_server, image_file, code_file, import_type, add_version, out))
+
+    if import_type == "all":
+        if out:
+            click.echo('Check file(image_file, code_file) exist or not')
+        if not os.path.isfile(image_file):
+            click.echo("[ERROR] No exist image_file:%s" % image_file)
+            return
+        if not os.path.isfile(code_file):
+            click.echo("[ERROR] No exist code_file:%s" % code_file)
+            return
+
+    if out:
+        click.echo('Import module image to docker registry')
+
+    version = 'latest'
+    cate_tags = 'none'
+    if os.path.isfile(code_file):
+        flag, version, cate_tags = get_module_version(code_file, add_version)
+        if not flag:
+            click.echo("[ERROR] code_file unzip ERROR")
+            return
+        spec_push_url = "http://%s/spec/push" % spec_server
+        internal_submit(spec_push_url, code_file, username)
+#        screwjack['--username', username, '--spec_server=%s:6006' % spec_server, 'submit_import']()
+    if os.path.isfile(image_file):
+        image_id = sudo[docker['import', image_file]]()
+        sudo[docker['tag', '-f', image_id[0:12], 'registry.aps.datacanvas.com:5000/%s/%s:%s' % (username, module, version)]]()
+
+@click.command()
+@click.option('-u', '--username', envvar='DATACANVAS_USERNAME', default='admin', 
+        help='Datacanvas username Default:["admin"]')
+@click.option('-p', '--password', envvar='DATACANVAS_PASSWORD', required=True, 
+        help='Datacanvas user password')
+@click.option('-s', '--spec_server', envvar='DATACANVAS_SPEC_SERVER', required=True, help='Spec server')
+@click.option('-d', '--dir_of_import', type=unicode, help='directory of tar files Default:["%s"]' % os.getcwd())
+@click.option('--import-type', default='all', type=click.Choice(['part', 'all']), 
+        help='All(both image and code file exist) or par(only import the tar exist) for import modules Default:[all]')
+@click.option('--out', is_flag=True, default=False, help='Print logs out Default:[Flase]')
+@click.option('--add_version', is_flag=True, default=False, help='Add module version Default:[Flase]')
+def import_all(username, password, spec_server, dir_of_import, out, add_version):
+    if not os.path.isdir(dir_of_import):
+        click.echo("[ERROR] dir_of_import:%s is not a directory" % dir_of_import)
+        return
+    modules = get_all_import_modules(dir_of_import, import_type=='all')
+    for module in modules:
+        image_file = "%s/%s.tar" % (dir_of_import, module)
+        code_file = "%s/%s_code.tar" % (dir_of_import, module)
+        _edsImport(username, password, module, spec_server, image_file, code_file, import_type, add_version, out)
+
+def get_all_import_modules(dir_of_import, import_type_all):
+    reg = re.compile('^(?P<module_name>[\s\S]+)(_code)?\.tar')
+    modules = {}
+    for fname in os.listdir(dir_of_import):
+        m = reg.match(fname)
+        if m:
+            module_name = m.group('module_name')
+            if module_name in modules:
+                modules[module_name] = modules[module_name] + 1
+            else:
+                modules[module_name] = 0
+    if import_type_all:
+        return [key for key in modules if modules[key] == 2]
+    return [key for key in modules]
+
+def get_module_version(code_file, add_version):
+    if os.path.isfile(code_file):
+        tmp_dir = '/tmp/%s' % uuid.uuid1().get_hex()[3:8]
+        try:
+            mkdir_p(tmp_dir)
+            t = tarfile.open(code_file, 'r|')
+            t.extractall(tmp_dir)
+            spec_file = "%s/spec.json" % tmp_dir
+            with open(spec_file, 'r') as f:
+                con = f.read()
+            js = json.loads(con)
+            version = js['Version']
+            cate_tags = js['CategoryTags'][0] if (js['CategoryTags']) > 0 and js['CategoryTags'][0] != 'Basic' else 'none'
+
+            if not add_version:
+                return True, version, cate_tags
+
+            r = re.compile('^(.*?)([0-9]+)$')
+            m = r.match(version)
+            js['Version'] = m.group(1)+str(int(m.group(2))+step)
+            with open(specFile, 'w') as f:
+                f.write(json.dumps(js))
+            return True, js['Version'], cate_tags
+            version = get_module_version(spec_file, add_version)
+        except:
+            return False, 'latest', 'none'
+        finally:
+            rm['-rf', tmp_dir]()
+
+def internal_submit(spec_push_url, code_file, username):
+    """
+    A internal function to submit/import module to spec_server.
+    """
+    spec_push_params = {
+        "user": username,
+        "templateType": 0,
+        "private": False
+    }
+
+    r = requests.post(spec_push_url,
+                      files={'moduletar': open(code_file, "rb")},
+                      headers={'x-spec-auth': '7fe0394626bc7efd2e5b3936eb69baf0'},
+                      params=spec_push_params)
+
+    if r.status_code != 200:
+        print("ERROR : Failed to submit")
+        print(r.text)
+        print(r.url)
+        sys.exit(-1)
+    else:
+        print(r.text)
+        if not async_wait_submit(spec_server, r.json()["id"]):
+            print("ERROR : Failed to submit module %s" % filename)
+            sys.exit(-2)
+        else:
+            print("Successful submit module %s" % filename)
+            sys.exit(0)
+
+def async_wait_submit(spec_server, job_id):
+    print("Waiting :'%s'" % job_id)
+    while True:
+        time.sleep(1)
+        spec_status_url = "http://%s/status" % spec_server
+
+        r = requests.get(spec_status_url,
+                         params={"id": job_id},
+                         headers={'x-spec-auth': '7fe0394626bc7efd2e5b3936eb69baf0'})
+        rj = r.json()
+        if rj['status'] == 'success':
+            return True
+        elif rj['status'] == 'pending':
+            print ".",
+            continue
+        elif rj['status'] == 'failed':
+            print("Failed to build : '%s'" % rj['message'])
+            return False
+        else:
+            print("Unknow status : '%s'" % rj['status'])
+            return False
+
+def get_modules_docker(username):
+    part_module = 'registry.aps.datacanvas.com:5000/%s' % username
+    result = (sudo[docker['images']] | grep[part_module])().splitlines()
+    return [line.split()[0].split('/')[-1] for line in result]
+
+def get_modules_server(spec_server, cookies):
+    modules = []
+    downURL = 'http://%s/tf/module/list?page=' % spec_server
+    for page in range(1, 100):
+        url = downURL + str(page)
+        js = requests.get(url, cookies=cookies).json()
+        if len(js['data']) == 0:
+            break
+        for m in js['data']:
+            modules.append(m['name'])
+    return modules
+
+def check_module_docker(username, module):
+    full_module = 'registry.aps.datacanvas.com:5000/%s/%s' % (username, module)
+    find = (sudo[docker['images']] | grep[full_module] | wc['-l'])().splitlines()[0] > 1
+    return find, full_module
+
+def check_module_server(spec_server, cookies, module):
+    list_url = 'http://%s/tf/module/list?moduleType=module&keyword=%s' % (spec_server, module)
+    r = requests.get(list_url, cookies=cookies)
+    if r.ok and r.json()['code'] == 0 and len(r.json()['data']) > 0:
+        return True, r.json()['data'][0]['id']
+    return False, None
+
+def down_module_from_server(down_url, save_path, cookies):
+    try:
+        r = requests.get(down_url, stream=True, cookies=cookies)
+        with open(save_path, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=1024): 
+                if chunk: # filter out keep-alive new chunks
+                    f.write(chunk)
+        return True
+    except:
+        return False
+
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc: # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else: raise
+
+def get_cookies(spec_server, username, password):
+    login_url = 'http://%s/user/login?account=%s&password=%s' % (spec_server, username, password)
+    return requests.post(login_url).cookies
+
+cli.add_command(export_eds)
+cli.add_command(import_eds)
+cli.add_command(export_all)
+cli.add_command(import_all)
+
+if __name__ == "__main__":
+    cli()
+

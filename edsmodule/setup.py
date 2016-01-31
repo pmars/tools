@@ -10,10 +10,11 @@
 
 
 from setuptools import setup, find_packages
+import edsmodule
 
 setup(
     name = "edsmodule",
-    version = "0.1.1",
+    version = edsmodule.__version__,
     keywords = ("eds", "datacanvas", "xiaoh", "module", "ehc", "aps"),
     description = "the tool for export or import modules of datacanvas eds service",
     long_description = "the tool for export or import modules of datacanvas eds service",
@@ -21,18 +22,18 @@ setup(
 
     url = "http://xiaoh.me",
     author = "xiaoh",
-    author_email = "p.mars@163.com",
+    author_email = "xiaoh@about.me",
 
     packages = find_packages(),
     include_package_data = True,
     platforms = "any",
-    install_requires = ["requests", "screwjack"],
+    install_requires = ["click", "plumbum", "requests"],
 
-    scripts = [],
-    entry_points = {
-        'console_scripts': [
-            'edsmodule = edsmodule.edsmodule:edsModule'
-        ]
-    }
+    scripts = ['bin/edsmodule']
+#    entry_points = {
+#        'console_scripts': [
+#            'edsmodule = edsmodule.edsmodule:edsModule'
+#        ]
+#    }
 )
 
