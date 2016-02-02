@@ -174,7 +174,7 @@ def _import_eds(username, password, module, spec_server, image_file, code_file, 
         if not flag:
             click.echo("[ERROR] code_file unzip ERROR")
             return
-        spec_push_url = "http://%s/spec/push" % spec_server
+        spec_push_url = "http://%s:6006/spec/import" % spec_server
         internal_submit(spec_push_url, code_file, username)
 #        screwjack['--username', username, '--spec_server=%s:6006' % spec_server, 'submit_import']()
     if os.path.isfile(image_file):
