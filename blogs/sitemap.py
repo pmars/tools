@@ -34,7 +34,7 @@ def main():
     r = re.compile("([a-zA-Z0-9_-]*/)*([^\\/]*?)\.[a-zA-Z0-9_-]*$")
     html = r.match(filename).group(2).replace('-', '/', 3)
 
-    if ''.join(sitecon).index(html) != -1:
+    if ''.join(sitecon).find(html) != -1:
         return
 
     sitecon.insert(-1, '    <url>\n')
