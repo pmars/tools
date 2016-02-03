@@ -9,7 +9,7 @@
 #############################################
 
 import click, requests, json
-import uuid, random
+import uuid, random, os
 
 @click.group()
 def cli():
@@ -24,6 +24,9 @@ def cli():
 @click.option('-t', '--table', required=True, help='Table name')
 @click.option('-v', '--version', default='v1', help='RestAPI version Default:[v1]')
 def create(host, port, user, auth_token, db, table, version):
+    """
+        Create flume service for upload data
+    """
     _get_request(host, port, user, auth_token, db, table, version, "create")
 
 @click.command()
@@ -35,6 +38,9 @@ def create(host, port, user, auth_token, db, table, version):
 @click.option('-t', '--table', required=True, help='Table name')
 @click.option('-v', '--version', default='v1', help='RestAPI version Default:[v1]')
 def start(host, port, user, auth_token, db, table, version):
+    """
+        Start flume service for upload data
+    """
     _get_request(host, port, user, auth_token, db, table, version, "start")
 
 @click.command()
@@ -46,6 +52,9 @@ def start(host, port, user, auth_token, db, table, version):
 @click.option('-t', '--table', required=True, help='Table name')
 @click.option('-v', '--version', default='v1', help='RestAPI version Default:[v1]')
 def stop(host, port, user, auth_token, db, table, version):
+    """
+        Stop flume service
+    """
     _get_request(host, port, user, auth_token, db, table, version, "stop")
 
 @click.command()
@@ -57,6 +66,9 @@ def stop(host, port, user, auth_token, db, table, version):
 @click.option('-t', '--table', required=True, help='Table name')
 @click.option('-v', '--version', default='v1', help='RestAPI version Default:[v1]')
 def restart(host, port, user, auth_token, db, table, version):
+    """
+        Restart flume service
+    """
     _get_request(host, port, user, auth_token, db, table, version, "restart")
 
 @click.command()
@@ -68,6 +80,9 @@ def restart(host, port, user, auth_token, db, table, version):
 @click.option('-t', '--table', required=True, help='Table name')
 @click.option('-v', '--version', default='v1', help='RestAPI version Default:[v1]')
 def status(host, port, user, auth_token, db, table, version):
+    """
+        Get status of flume service
+    """
     _get_request(host, port, user, auth_token, db, table, version, "status")
 
 @click.command()
@@ -77,6 +92,9 @@ def status(host, port, user, auth_token, db, table, version):
 @click.option('-a', '--auth_token', required=True, help='Token of user')
 @click.option('-v', '--version', default='v1', help='RestAPI version Default:[v1]')
 def token(host, port, user, auth_token, version):
+    """
+        Modify user token
+    """
     _set_token(host, port, user, auth_token, version)
 
 @click.command()
@@ -90,6 +108,9 @@ def token(host, port, user, auth_token, version):
 @click.option('--lines', default=1, help='Lines of upload data per time')
 @click.option('-v', '--version', default='v1', help='RestAPI version Default:[v1]')
 def post(host, port, user, auth_token, db, table, times, lines, version):
+    """
+        Post random data to server(Production Environment)
+    """
     _post(host, port, user, auth_token, db, table, times, lines, version)
 
 @click.command()
@@ -97,6 +118,9 @@ def post(host, port, user, auth_token, db, table, times, lines, version):
 @click.option('-p', '--port', required=True, help='Port of data center')
 @click.option('--lines', default=1, help='Lines of upload data per time')
 def flume(host, port, lines):
+    """
+        post random data directly to flume server
+    """
     url = "http://%s:%s" % (host, port)
     data = _get_random_data(lines)
     post_data = []
@@ -107,6 +131,52 @@ def flume(host, port, lines):
     if r.ok:
         click.echo(r.text)
 
+@click.command()
+@click.option('-h', '--host', required=True, help='Host of data center')
+@click.option('-p', '--port', required=True, help='Port of data center')
+@click.option('-u', '--user', required=True, help='User of data center')
+@click.option('-a', '--auth_token', required=True, help='Token of user')
+@click.option('-d', '--db', required=True, help='Database name')
+@click.option('-t', '--table', required=True, help='Table name')
+@click.option('-f', '--filename', required=True, help='File path saving json data')
+@click.option('--lines', default=1, help='Lines of upload data per time')
+@click.option('-v', '--version', default='v1', help='RestAPI version Default:[v1]')
+def postfile(host, port, user, auth_token, db, table, filename, lines, version):
+    """
+        post data reading from file to server
+    """
+    if not os.path.isfile(filename):
+        click.echo('[ERROR] Filename not exist')
+        return
+
+    headers = {'X-USERNAME':user, 'X-AUTH-TOKEN':auth_token}
+    url = "http://%s:%s/%s/%s/%s" % (host, port, version, db, table)
+
+    with open(filename) as f:
+        datas = f.readlines()
+
+    total_lines = len(datas)
+    over_lines = 0
+    post_data = []
+    for data in datas:
+        js = json.loads(data)
+        js['tags']= js['tags'][0] if len(js['tags']) else ''
+        post_data.append(js)
+        if len(post_data) == lines:
+            over_lines = over_lines + lines
+            requests.post(url, data=json.dumps(post_data), headers=headers)
+            click.echo('Post %s/%s lines data to flume Server' % (over_lines, total_lines))
+            post_data = []
+
+    if len(post_data) > 0:
+        over_lines = over_lines + len(post_data)
+        requests.post(url, data=json.dumps(post_data), headers=headers)
+        click.echo('Post %s/%s lines data to flume Server' % (over_lines,total_lines))
+
+    click.echo("All data post to flume server")
+
+
+cli.add_command(postfile)
 cli.add_command(flume)
 cli.add_command(create)
 cli.add_command(start)
@@ -115,6 +185,7 @@ cli.add_command(restart)
 cli.add_command(status)
 cli.add_command(token)
 cli.add_command(post)
+
 
 def _post(host, port, user, auth_token, db, table, times, lines, version):
     headers = {'X-USERNAME':user, 'X-AUTH-TOKEN':auth_token}
