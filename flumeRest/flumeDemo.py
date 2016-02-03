@@ -15,7 +15,7 @@ import uuid, random, os
 def cli():
     pass
 
-@click.command()
+@cli.command()
 @click.option('-h', '--host', required=True, help='Host of data center')
 @click.option('-p', '--port', required=True, help='Port of data center')
 @click.option('-u', '--user', required=True, help='User of data center')
@@ -29,7 +29,7 @@ def create(host, port, user, auth_token, db, table, version):
     """
     _get_request(host, port, user, auth_token, db, table, version, "create")
 
-@click.command()
+@cli.command()
 @click.option('-h', '--host', required=True, help='Host of data center')
 @click.option('-p', '--port', required=True, help='Port of data center')
 @click.option('-u', '--user', required=True, help='User of data center')
@@ -43,7 +43,7 @@ def start(host, port, user, auth_token, db, table, version):
     """
     _get_request(host, port, user, auth_token, db, table, version, "start")
 
-@click.command()
+@cli.command()
 @click.option('-h', '--host', required=True, help='Host of data center')
 @click.option('-p', '--port', required=True, help='Port of data center')
 @click.option('-u', '--user', required=True, help='User of data center')
@@ -57,7 +57,7 @@ def stop(host, port, user, auth_token, db, table, version):
     """
     _get_request(host, port, user, auth_token, db, table, version, "stop")
 
-@click.command()
+@cli.command()
 @click.option('-h', '--host', required=True, help='Host of data center')
 @click.option('-p', '--port', required=True, help='Port of data center')
 @click.option('-u', '--user', required=True, help='User of data center')
@@ -71,7 +71,7 @@ def restart(host, port, user, auth_token, db, table, version):
     """
     _get_request(host, port, user, auth_token, db, table, version, "restart")
 
-@click.command()
+@cli.command()
 @click.option('-h', '--host', required=True, help='Host of data center')
 @click.option('-p', '--port', required=True, help='Port of data center')
 @click.option('-u', '--user', required=True, help='User of data center')
@@ -85,7 +85,7 @@ def status(host, port, user, auth_token, db, table, version):
     """
     _get_request(host, port, user, auth_token, db, table, version, "status")
 
-@click.command()
+@cli.command()
 @click.option('-h', '--host', required=True, help='Host of data center')
 @click.option('-p', '--port', required=True, help='Port of data center')
 @click.option('-u', '--user', required=True, help='User of data center')
@@ -97,7 +97,7 @@ def token(host, port, user, auth_token, version):
     """
     _set_token(host, port, user, auth_token, version)
 
-@click.command()
+@cli.command()
 @click.option('-h', '--host', required=True, help='Host of data center')
 @click.option('-p', '--port', required=True, help='Port of data center')
 @click.option('-u', '--user', required=True, help='User of data center')
@@ -113,7 +113,7 @@ def post(host, port, user, auth_token, db, table, times, lines, version):
     """
     _post(host, port, user, auth_token, db, table, times, lines, version)
 
-@click.command()
+@cli.command()
 @click.option('-h', '--host', required=True, help='Host of data center')
 @click.option('-p', '--port', required=True, help='Port of data center')
 @click.option('--lines', default=1, help='Lines of upload data per time')
@@ -131,7 +131,7 @@ def flume(host, port, lines):
     if r.ok:
         click.echo(r.text)
 
-@click.command()
+@cli.command()
 @click.option('-h', '--host', required=True, help='Host of data center')
 @click.option('-p', '--port', required=True, help='Port of data center')
 @click.option('-u', '--user', required=True, help='User of data center')
@@ -164,7 +164,10 @@ def postfile(host, port, user, auth_token, db, table, filename, lines, version):
         post_data.append(js)
         if len(post_data) == lines:
             over_lines = over_lines + lines
-            requests.post(url, data=json.dumps(post_data), headers=headers)
+            r = requests.post(url, data=json.dumps(post_data), headers=headers)
+            if r.status_code != 200:
+                click.echo("[ERROR] Invalid response data")
+                return
             click.echo('Post %s/%s lines data to flume Server' % (over_lines, total_lines))
             post_data = []
 
@@ -174,18 +177,6 @@ def postfile(host, port, user, auth_token, db, table, filename, lines, version):
         click.echo('Post %s/%s lines data to flume Server' % (over_lines,total_lines))
 
     click.echo("All data post to flume server")
-
-
-cli.add_command(postfile)
-cli.add_command(flume)
-cli.add_command(create)
-cli.add_command(start)
-cli.add_command(stop)
-cli.add_command(restart)
-cli.add_command(status)
-cli.add_command(token)
-cli.add_command(post)
-
 
 def _post(host, port, user, auth_token, db, table, times, lines, version):
     headers = {'X-USERNAME':user, 'X-AUTH-TOKEN':auth_token}
