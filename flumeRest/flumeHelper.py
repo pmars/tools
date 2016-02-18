@@ -172,6 +172,8 @@ a1.sinks.k1.hdfs.rollCount = 8192
 a1.sinks.k1.hdfs.idleTimeout = 60
 a1.sinks.k1.hdfs.writeFormat = Text
 a1.sinks.k1.hdfs.fileType = DataStream
+a1.sinks.k1.hdfs.fileSuffix = .json
+a1.sinks.k1.hdfs.rollSize = 1024000
 
 
 #######################

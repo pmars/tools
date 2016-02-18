@@ -26,7 +26,7 @@ def output_version(ctx, param, value):
 @click.option('-v', '--version', is_flag=True, is_eager=True, callback=output_version, expose_value=False)
 @click.option('-p', '--search_path', default=os.getcwd(), help='Path for searching default:[%s]' % os.getcwd())
 @click.option('-f', '--file_reg', default='', help='Regex string for searching files pattern default:[\'\']')
-@click.option('-r', '--con_reg', default='', required=True, help='Regex string for searching content pattern default:[\'\']')
+@click.option('-r', '--con_reg', required=True, help='Regex string for searching content pattern default:[\'\']')
 @click.option('--output/--no-output', default=False, help='Output logs default:[False]')
 def cli(search_path, file_reg, con_reg, output):
     print search_path, file_reg, con_reg, output

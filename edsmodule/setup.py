@@ -30,10 +30,5 @@ setup(
     install_requires = ["click", "plumbum", "requests"],
 
     scripts = ['bin/edsmodule']
-#    entry_points = {
-#        'console_scripts': [
-#            'edsmodule = edsmodule.edsmodule:edsModule'
-#        ]
-#    }
 )
 
