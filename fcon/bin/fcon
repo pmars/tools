@@ -26,10 +26,10 @@ def output_version(ctx, param, value):
 @click.option('-v', '--version', is_flag=True, is_eager=True, callback=output_version, expose_value=False)
 @click.option('-p', '--search_path', default=os.getcwd(), help='Path for searching default:[%s]' % os.getcwd())
 @click.option('-f', '--file_reg', default='', help='Regex string for searching files pattern default:[\'\']')
-@click.option('-r', '--con_reg', required=True, help='Regex string for searching content pattern default:[\'\']')
 @click.option('--output/--no-output', default=False, help='Output logs default:[False]')
-def cli(search_path, file_reg, con_reg, output):
-    print search_path, file_reg, con_reg, output
+@click.argument('content_match_reg')
+def cli(search_path, file_reg, output, content_match_reg):
+    print 'search_path:"%s", file_reg:"%s", content_match_reg:"%s", output:%s' % (search_path, file_reg, content_match_reg, output)
     if not os.path.isdir(search_path):
         click.echo('[ERROR] Path for searching ERROR')
         return
@@ -40,7 +40,7 @@ def cli(search_path, file_reg, con_reg, output):
         return
 
     try:
-        cr = re.compile('(.*)(%s)(.*)' % con_reg.replace('(','').replace(')',''))
+        cr = re.compile('(.*)(%s)(.*)' % content_match_reg.replace('(','').replace(')',''))
     except:
         click.echo('[ERROR] Regex string for searching content ERROR')
         return
