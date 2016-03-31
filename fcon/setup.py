@@ -14,12 +14,12 @@ import fcon
 setup(
     name = "fcon",
     version = fcon.__version__,
-    keywords = ("find", "fcon", "xiaoh"),
+    keywords = ("find", "fcon", "xiaoh", "search", "content"),
     description = "find content",
-    long_description = "print files which contain the content you want to search.",
+    long_description = "show the files which contains the content you want to search.",
     license = "MIT Licence",
 
-    url = "http://xiaoh.me",
+    url = "https://github.com/pmars/tools/tree/master/fcon",
     author = "xiaoh",
     author_email = "xiaoh@about.me",
 
