@@ -4,6 +4,19 @@
 ---
 
 It is a simple tool for finding text from current folder.
+
+---
+
+## Installation
+
+Our latest stable is always available on PyPi.
+
+```Shell
+pip install fcon
+```
+
+## Documentation
+
 You can set up few parameters for this tool
 
 ```Shell
@@ -22,9 +35,13 @@ Options:
 
 ---
 
+## Contact
+
 If you have any questions, welcome to send an email to <a class="email" href="mailto:xiaoh@about.me">xiaoh@about.me</a>
 
 ---
+
+## Blog
 
 Welcom to my blog: http://www.xiaoh.me
 

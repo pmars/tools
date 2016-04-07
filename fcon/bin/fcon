@@ -81,14 +81,18 @@ def find_files(dirPath, r):
 text_char = "".join(map(chr, range(32, 127)) + list("\n\r\t\b"))
 null_trans = string.maketrans("", "")
 def is_text_file(filename, block_size=512):
-    with open(filename) as f:
-        s = f.read(block_size)
-        if "\0" in s:       # if exist \0，binary file
-            return False
-        if not s:           # empty, text file
-            return True
-        t = s.translate(null_trans, text_char)
+    try:
+        with open(filename) as f:
+            s = f.read(block_size)
+            if "\0" in s:       # if exist \0，binary file
+                return False
+            if not s:           # empty, text file
+                return True
+            t = s.translate(null_trans, text_char)
         return len(t)/len(s) < 0.3  # remove char over, less than 30% then text file
+    except:
+        click.echo('[ERROR] Open file %s failed.' % filename)
+        return False
 
 if __name__ == "__main__":
     cli()
