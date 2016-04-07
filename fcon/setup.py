@@ -15,7 +15,7 @@ setup(
     name = "fcon",
     version = fcon.__version__,
     keywords = ("find", "fcon", "xiaoh", "search", "content"),
-    description = "find content",
+    description = "show the files which contains the content you want to search.",
     long_description = "show the files which contains the content you want to search.",
     license = "MIT Licence",
 

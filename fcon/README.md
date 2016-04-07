@@ -3,7 +3,7 @@
 
 ---
 
-It is a simple tool for finding text from current folder.
+It is a simple tool for finding text you want to search from the folder you want. 
 
 ---
 

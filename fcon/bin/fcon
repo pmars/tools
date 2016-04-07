@@ -29,6 +29,9 @@ def output_version(ctx, param, value):
 @click.option('--output/--no-output', default=False, help='Output logs default:[False]')
 @click.argument('content_match_reg')
 def cli(search_path, file_reg, output, content_match_reg):
+    '''
+        show the files which contains the content you want to search.
+    '''
     print 'search_path:"%s", file_reg:"%s", content_match_reg:"%s", output:%s' % (search_path, file_reg, content_match_reg, output)
     if not os.path.isdir(search_path):
         click.echo('[ERROR] Path for searching ERROR')
