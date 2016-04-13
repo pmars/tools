@@ -15,6 +15,8 @@ Our latest stable is always available on PyPi.
 pip install fcon
 ```
 
+---
+
 ## Documentation
 
 You can set up few parameters for this tool
