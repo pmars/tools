@@ -16,7 +16,7 @@ except:
     sys.path.append(os.path.join(os.path.dirname(__file__), "../"))
     import fcon
 
-def output_version(ctx, param, value):
+def output_version(ctx, value):
     if not value or ctx.resilient_parsing:
         return
     click.echo("Version: %s" % fcon.__version__)
@@ -34,18 +34,18 @@ def cli(search_path, file_reg, output, content_match_reg):
     '''
     click.echo('search_path:"%s", file_reg:"%s", content_match_reg:"%s", output:%s' % (search_path, file_reg, content_match_reg, output))
     if not os.path.isdir(search_path):
-        click.echo('[ERROR] Path for searching ERROR')
+        click.echo('\033[1;31;40m[ERROR]\033[0m Path for searching ERROR')
         return
     try:
-        fr = re.compile(file_reg)
+        fr = re.compile('(?i).*' + file_reg)
     except:
-        click.echo('[ERROR] Regex string for searching files ERROR')
+        click.echo('\033[1;31;40m[ERROR]\033[0m Regex string for searching files ERROR')
         return
 
     try:
         cr = re.compile('(.*)(%s)(.*)' % content_match_reg.replace('(','').replace(')',''))
     except:
-        click.echo('[ERROR] Regex string for searching content ERROR')
+        click.echo('\033[1;31;40m[ERROR]\033[0m Regex string for searching content ERROR')
         return
 
     files = find_files(search_path, fr)
@@ -76,7 +76,7 @@ def find_files(dirPath, r):
         if os.path.isdir(path):
             files = files + find_files(path, r)
         else:
-            if r.match(path):
+            if r.match(fd):
                 files.append(path)
     return files
 
@@ -94,7 +94,7 @@ def is_text_file(filename, block_size=512):
             t = s.translate(null_trans, text_char)
         return len(t)/len(s) < 0.3  # remove char over, less than 30% then text file
     except:
-        click.echo('[ERROR] Open file %s failed.' % filename)
+        click.echo('\033[1;31;40m[ERROR]\033[0m Open file %s failed.' % filename)
         return False
 
 if __name__ == "__main__":
