@@ -16,7 +16,7 @@ except:
     sys.path.append(os.path.join(os.path.dirname(__file__), "../"))
     import fcon
 
-def output_version(ctx, value):
+def output_version(ctx, param, value):
     if not value or ctx.resilient_parsing:
         return
     click.echo("Version: %s" % fcon.__version__)
