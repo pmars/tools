@@ -1,0 +1,167 @@
+#!/usr/bin/env python
+#-*- coding:utf-8 -*-
+
+#############################################
+# File Name: ramchet
+# Author: xiaoh
+# Mail: xiaoh@about.me
+# Created Time:  2015-11-20 02:51:31 PM
+#############################################
+
+import sys, os, re, string, time
+import click, requests, traceback
+import subprocess
+try:
+    import ramchet
+except:
+    sys.path.append(os.path.join(os.path.dirname(__file__), "../"))
+    import ramchet
+
+def run_cmd(cmd):
+    return subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout.read()
+
+def output_version(ctx, param, value):
+    if not value or ctx.resilient_parsing:
+        return
+    click.echo("Version: %s" % ramchet.__version__)
+    ctx.exit()
+
+@click.group()
+@click.option('-v', '--version', is_flag=True, is_eager=True, callback=output_version, expose_value=False)
+def cli():
+    pass
+
+@cli.command()
+@click.option('-u', '--url', default='http://218.241.231.82:5567/v1/cmpt/version', 
+        help='url for getting component version')
+@click.argument('component')
+def version(url, component):
+    '''
+        Get version of one component
+    '''
+    try:
+        req = requests.get(os.path.join(url, component))
+        click.echo(req.json())
+    except Exception as e:
+        click.echo(traceback.format_exc())
+        click.echo('\033[1;31;40m[ERROR]\033[0m %s' % e.message)
+
+
+@cli.command()
+@click.option('-u', '--url', default='http://218.241.231.82:5567/v1/cmpt/command', 
+        help='url for getting component version')
+@click.argument('component')
+def command(url, component):
+    '''
+        Get startting docker container command of one component
+    '''
+    try:
+        req = requests.get(os.path.join(url, component))
+        click.echo(req.json())
+    except Exception as e:
+        click.echo(traceback.format_exc())
+        click.echo('\033[1;31;40m[ERROR]\033[0m %s' % e.message)
+
+
+@cli.command()
+@click.option('-u', '--url', default='http://218.241.231.82:5567/v1/cmpts', 
+        help='url for getting component version')
+def components(url):
+    '''
+        Get versions of all components for upgrading
+    '''
+    try:
+        req = requests.get(url)
+        click.echo(req.json())
+    except Exception as e:
+        click.echo(traceback.format_exc())
+        click.echo('\033[1;31;40m[ERROR]\033[0m %s' % e.message)
+
+
+DEFAULT_DOCKER_NAME = "COMPONENT_NAME"
+@cli.command()
+@click.option('-u', '--url', default='http://218.241.231.82:5567/v1/cmpt/command', 
+        help='url for getting component version')
+@click.option('-h', '--docker_host', default="pubreg.zetyun.com:5000", help="docker host")
+@click.option('-l', '--local_host', default="registry.aps.datacanvas.com:5000", help="docker local host")
+@click.option('-a', '--add_host', default="/usr/lib/aps-installer/config/aps_add_hosts", help="host path")
+@click.option('-e', '--env_path', default="/usr/lib/aps-installer/.env", help="env params file path")
+@click.option('-d', '--docker_name', default=DEFAULT_DOCKER_NAME, help="docker name")
+@click.option('-v', '--version', required=True, help="component version")
+@click.argument('component')
+def update(url, docker_host, local_host, add_host, env_path, docker_name, version, component):
+    '''
+        update one component
+    '''
+    try:
+        if docker_name == DEFAULT_DOCKER_NAME:
+            docker_name = component
+
+        pull_cmd = 'sudo docker pull %s/zetimg/%s:%s' % (docker_host, component, version)
+        tag_cmd  = 'sudo docker tag -f %s/zetimg/%s:%s %s/zetimg/%s:%s' % (docker_host,
+                component, version, local_host, component, version)
+        stop_cmd = "sudo docker stop %s" % docker_name
+        rm_cmd   = "sudo docker rm -v %s" % docker_name
+        start_cmd  = requests.get(os.path.join(url, component)).json()['result']
+
+        host_list = ''
+        with open(add_host) as f:
+            host_list = f.read()
+        start_cmd.replace('${add_host}', host_list)
+
+        with open(env_path) as f:
+            for line in f.readlines():
+                spart = line.split('=')
+                if len(spart) == 2:
+                    key = spart[0].strip()
+                    value = spart[1].strip()
+                    start_cmd.replace('${%s}' % key, value)
+
+        click.echo(pull_cmd)
+        result = run_cmd(pull_cmd)
+        click.echo(result)
+#        click.echo(result.lower())
+#        click.echo(result.lower().find('error'))
+#        click.echo(result.lower().find('error') != -1)
+        if result.lower().find('error') != -1:
+            click.echo('\033[1;31;40m[ERROR]\033[0m RUN pull command ERROR')
+            exit(1)
+
+        time.sleep(5)
+        click.echo(tag_cmd)
+        result = run_cmd(tag_cmd)
+        click.echo(result)
+        if result.lower().find('error') != -1:
+            click.echo('\033[1;31;40m[ERROR]\033[0m RUN tag command ERROR')
+            exit(1)
+
+        time.sleep(5)
+        click.echo(stop_cmd)
+        result = run_cmd(stop_cmd)
+        click.echo(result)
+        if result.lower().find('error') != -1:
+            click.echo('\033[1;31;40m[ERROR]\033[0m RUN stop command ERROR')
+            exit(1)
+
+        time.sleep(5)
+        click.echo(rm_cmd)
+        result = run_cmd(rm_cmd)
+        click.echo(result)
+        if result.lower().find('error') != -1:
+            click.echo('\033[1;31;40m[ERROR]\033[0m RUN rm command ERROR')
+            exit(1)
+
+        time.sleep(5)
+        click.echo(start_cmd)
+        result = run_cmd(start_cmd)
+        click.echo(result)
+        if result.lower().find('error') != -1:
+            click.echo('\033[1;31;40m[ERROR]\033[0m RUN start command ERROR')
+            exit(1)
+    except Exception as e:
+        click.echo(traceback.format_exc())
+        click.echo('\033[1;31;40m[ERROR]\033[0m %s' % e.message)
+
+if __name__ == "__main__":
+    cli()
+

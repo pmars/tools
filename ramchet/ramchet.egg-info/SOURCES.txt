@@ -1,0 +1,10 @@
+MANIFEST.in
+README.md
+setup.py
+bin/ramchet
+ramchet/__init__.py
+ramchet.egg-info/PKG-INFO
+ramchet.egg-info/SOURCES.txt
+ramchet.egg-info/dependency_links.txt
+ramchet.egg-info/requires.txt
+ramchet.egg-info/top_level.txt

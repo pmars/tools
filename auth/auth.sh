@@ -36,10 +36,10 @@ echo "[all]" > /tmp/hosts.tmp
 echo "$host ansible_ssh_user=$name  ansible_ssh_pass=$pass  ansible_connection=paramiko" >> /tmp/hosts.tmp
 
 echo "ansible to $host"
-ansible all -i /tmp/hosts.tmp -m copy -a "src=~/.ssh/id_rsa.pub dest=/tmp/key"
-ansible all -i /tmp/hosts.tmp -m shell -a "mkdir -p $path/.ssh"
-ansible all -i /tmp/hosts.tmp -m shell -a "cat /tmp/key >> $path/.ssh/authorized_keys"
-ansible all -i /tmp/hosts.tmp -m shell -a "rm /tmp/key"
+ansible -vvvvvvv all -i /tmp/hosts.tmp -m copy -a "src=~/.ssh/id_rsa.pub dest=/tmp/key"
+ansible -vvvvvvv all -i /tmp/hosts.tmp -m shell -a "mkdir -p $path/.ssh"
+ansible -vvvvvvv all -i /tmp/hosts.tmp -m shell -a "cat /tmp/key >> $path/.ssh/authorized_keys"
+ansible -vvvvvvv all -i /tmp/hosts.tmp -m shell -a "rm /tmp/key"
 
 echo "clear hosts file"
 rm /tmp/hosts.tmp

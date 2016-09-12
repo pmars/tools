@@ -1,0 +1,245 @@
+#!/usr/bin/env python
+#-*- coding:utf-8 -*-
+
+#############################################
+# File Name: shakky.py
+# Author: xiaoh
+# Mail: xiaoh@about.me
+# Created Time:  2016-05-01 02:51:31 AM
+#############################################
+
+import requests, sys, os, traceback
+import click, json, subprocess
+try:
+    import shakky
+except:
+    sys.path.append(os.path.join(os.path.dirname(__file__), "../"))
+    import shakky
+
+def output_version(ctx, param, value):
+    if not value or ctx.resilient_parsing:
+        return
+    click.echo("Version: %s" % shakky.__version__)
+    ctx.exit()
+
+@click.group()
+@click.option('-v', '--version', is_flag=True, is_eager=True, callback=output_version, expose_value=False)
+def cli():
+    pass
+
+@cli.command()
+@click.option('-h', '--host', default='localhost', help='host of shakky service')
+@click.option('-p', '--port', default='8004', help='port of shakky service')
+@click.option('-v', '--version', default=1, help='version of shakky service')
+def machine(host, port, version):
+    '''
+        show machine message
+    '''
+    show_msg(host, port, version, 'machine')
+
+@cli.command()
+@click.option('-h', '--host', default='localhost', help='host of shakky service')
+@click.option('-p', '--port', default='8004', help='port of shakky service')
+@click.option('-v', '--version', default=1, help='version of shakky service')
+def CPU(host, port, version):
+    '''
+        show CPU message
+    '''
+    show_msg(host, port, version, 'cpu')
+
+@cli.command()
+@click.option('-h', '--host', default='localhost', help='host of shakky service')
+@click.option('-p', '--port', default='8004', help='port of shakky service')
+@click.option('-v', '--version', default=1, help='version of shakky service')
+def memory(host, port, version):
+    '''
+        show memory message
+    '''
+    show_msg(host, port, version, 'memory')
+
+@cli.command()
+@click.option('-h', '--host', default='localhost', help='host of shakky service')
+@click.option('-p', '--port', default='8004', help='port of shakky service')
+@click.option('-v', '--version', default=1, help='version of shakky service')
+def disk(host, port, version):
+    '''
+        show disk message
+    '''
+    show_msg(host, port, version, 'disk')
+
+@cli.command()
+@click.option('-h', '--host', default='localhost', help='host of shakky service')
+@click.option('-p', '--port', default='8004', help='port of shakky service')
+@click.option('-v', '--version', default=1, help='version of shakky service')
+def network(host, port, version):
+    '''
+        show network message
+    '''
+    show_msg(host, port, version, 'network')
+
+def show_msg(host, port, version, method):
+    try:
+        url = 'http://%s:%s/api/v%s/%s' % (host, port, version, method)
+        req = requests.get(url)
+        click.echo(req.json())
+    except Exception as e:
+        click.echo('\033[1;31;40m[ERROR]\033[0m %s' % e.message)
+
+@cli.command()
+@click.option('-h', '--host', default='localhost', help='host of shakky service')
+@click.option('-p', '--port', default='8004', help='port of shakky service')
+@click.option('-v', '--version', default=1, help='version of shakky service')
+@click.option('-n', '--name', required=True, help='name of spider')
+def spider(host, port, version, name):
+    '''
+        show status of one spider
+    '''
+    try:
+        url = 'http://%s:%s/api/v%s/spider?name=%s' % (host, port, version, name)
+        req = requests.get(url)
+        click.echo(req.content)
+    except Exception as e:
+        click.echo('\033[1;31;40m[ERROR]\033[0m %s' % e.message)
+
+@cli.command()
+@click.option('-h', '--host', default='localhost', help='host of shakky service')
+@click.option('-p', '--port', default='8004', help='port of shakky service')
+@click.option('-v', '--version', default=1, help='version of shakky service')
+@click.option('-n', '--name', required=True, help='name of spider')
+def spider_delete(host, port, version, name):
+    '''
+        remove one spider
+    '''
+    try:
+        url = 'http://%s:%s/api/v%s/spider?name=%s' % (host, port, version, name)
+        req = requests.delete(url)
+        click.echo(req.content)
+    except Exception as e:
+        click.echo('\033[1;31;40m[ERROR]\033[0m %s' % e.message)
+
+@cli.command()
+@click.option('-h', '--host', default='localhost', help='host of shakky service')
+@click.option('-p', '--port', default='8004', help='port of shakky service')
+@click.option('-v', '--version', default=1, help='version of shakky service')
+@click.option('-n', '--name', required=True, help='name of spider')
+@click.option('-f', '--filename', required=True, help='script of spider')
+@click.option('-M', '--mins', default='0', help='mins of running this spider')
+@click.option('-H', '--hour', default='0', help='hour of running this spider')
+@click.option('-d', '--days', default='*', help='days of running this spider')
+@click.option('-m', '--month', default='*', help='month of running this spider')
+@click.option('-c', '--command', required=True, help='command of running this spider')
+def spider_create(host, port, version, name, filename, mins, hour, days, month, command):
+    '''
+        create one spider
+    '''
+    try:
+        if not os.path.isfile(filename) and not os.path.isdir(filename):
+            click.echo('\033[1;31;40m[ERROR]\033[0m %s can not open as file' % filename)
+            click.exit(1)
+
+        url = 'http://%s:%s/api/v%s/spider?name=%s&mins=%s&hour=%s&days=%s&month=%s' % (
+            host, port, version, name, mins, hour, days, month)
+
+        if os.path.isdir(filename):
+            cmd = 'cd %s && tar -czf spider.tar.gz *' % (filename)
+            subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout.read()
+            filename = os.path.join(filename, 'spider.tar.gz')
+
+        files = {
+            'command':command, 
+            'script': open(filename, 'rb')
+        }
+        req = requests.put(url, files=files)
+        click.echo(req.content)
+    except Exception as e:
+        traceback.print_exc()
+        click.echo('\033[1;31;40m[ERROR]\033[0m %s' % e.message)
+
+@cli.command()
+@click.option('-h', '--host', default='localhost', help='host of shakky service')
+@click.option('-p', '--port', default='8004', help='port of shakky service')
+@click.option('-v', '--version', default=1, help='version of shakky service')
+@click.option('-n', '--name', required=True, help='name of spider')
+def spider_start(host, port, version, name):
+    '''
+        start one spider
+    '''
+    try:
+        url = 'http://%s:%s/api/v%s/spiderstart?name=%s' % (host, port, version, name)
+        req = requests.get(url)
+        click.echo(req.content)
+    except Exception as e:
+        click.echo('\033[1;31;40m[ERROR]\033[0m %s' % e.message)
+
+@cli.command()
+@click.option('-h', '--host', default='localhost', help='host of shakky service')
+@click.option('-p', '--port', default='8004', help='port of shakky service')
+@click.option('-v', '--version', default=1, help='version of shakky service')
+@click.option('-n', '--name', required=True, help='name of spider')
+@click.option('-l', '--line', default=100, help='ones of logging you want to see')
+def spider_log(host, port, version, name, line):
+    '''
+        show logging of one spider
+    '''
+    try:
+        url = 'http://%s:%s/api/v%s/spiderlog?name=%s&line=%s' % (host, port, version, name, line)
+        req = requests.get(url)
+        click.echo(req.content)
+    except Exception as e:
+        click.echo('\033[1;31;40m[ERROR]\033[0m %s' % e.message)
+
+@cli.command()
+@click.option('-h', '--host', default='localhost', help='host of shakky service')
+@click.option('-p', '--port', default='8004', help='port of shakky service')
+@click.option('-v', '--version', default=1, help='version of shakky service')
+@click.option('-n', '--name', required=True, help='name of spider')
+@click.option('-M', '--mins', default='0', help='mins of running this spider')
+@click.option('-H', '--hour', default='0', help='hour of running this spider')
+@click.option('-d', '--days', default='*', help='days of running this spider')
+@click.option('-m', '--month', default='*', help='month of running this spider')
+def spider_modify(host, port, version, name, mins, hour, days, month):
+    '''
+        modify the time when starting one spider
+    '''
+    try:
+        url = 'http://%s:%s/api/v%s/spidermodify?name=%s&mins=%s&hour=%s&days=%s&month=%s' % (
+            host, port, version, name, mins, hour, days, month)
+
+        req = requests.get(url)
+        click.echo(req.content)
+    except Exception as e:
+        click.echo('\033[1;31;40m[ERROR]\033[0m %s' % e.message)
+
+@cli.command()
+@click.option('-h', '--host', default='localhost', help='host of shakky service')
+@click.option('-p', '--port', default='8004', help='port of shakky service')
+@click.option('-v', '--version', default=1, help='version of shakky service')
+def spiders(host, port, version):
+    '''
+        show spider list
+    '''
+    try:
+        url = 'http://%s:%s/api/v%s/spiderlist' % (host, port, version)
+        req = requests.get(url)
+        click.echo(req.content)
+    except Exception as e:
+        click.echo('\033[1;31;40m[ERROR]\033[0m %s' % e.message)
+
+@cli.command()
+@click.option('-h', '--host', default='localhost', help='host of shakky service')
+@click.option('-p', '--port', default='8004', help='port of shakky service')
+@click.option('-v', '--version', default=1, help='version of shakky service')
+def spiders_delete(host, port, version):
+    '''
+        remove all spiders
+    '''
+    try:
+        url = 'http://%s:%s/api/v%s/spiderlist' % (host, port, version)
+        req = requests.delete(url)
+        click.echo(req.content)
+    except Exception as e:
+        click.echo('\033[1;31;40m[ERROR]\033[0m %s' % e.message)
+
+if __name__ == "__main__":
+    cli()
+
